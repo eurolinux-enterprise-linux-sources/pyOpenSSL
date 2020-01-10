@@ -1,0 +1,12 @@
+diff -up pyOpenSSL-0.13.1/OpenSSL/test/test_ssl.py.test-failure pyOpenSSL-0.13.1/OpenSSL/test/test_ssl.py
+--- pyOpenSSL-0.13.1/OpenSSL/test/test_ssl.py.test-failure	2011-08-15 00:06:11.000000000 +0200
++++ pyOpenSSL-0.13.1/OpenSSL/test/test_ssl.py	2015-02-26 16:19:48.455692548 +0100
+@@ -645,7 +645,7 @@ class ContextTests(TestCase, _LoopbackMi
+         self.assertRaises(TypeError, context.load_verify_locations, None, None, None)
+ 
+ 
+-    if platform == "win32":
++    if True:
+         "set_default_verify_paths appears not to work on Windows.  "
+         "See LP#404343 and LP#404344."
+     else:

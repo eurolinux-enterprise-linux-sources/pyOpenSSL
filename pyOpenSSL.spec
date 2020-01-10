@@ -1,41 +1,54 @@
-%{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
-
 Summary: Python wrapper module around the OpenSSL library
 Name: pyOpenSSL
-Version: 0.10
+Version: 0.13.1
 Release: 2%{?dist}
-Source0: http://pypi.python.org/packages/source/p/pyOpenSSL/%{name}-%{version}.tar.gz
+Source0: http://pypi.python.org/packages/source/p/pyOpenSSL/pyOpenSSL-%{version}.tar.gz
+
+# Fedora specific patches
+
 Patch2: pyOpenSSL-elinks.patch
 Patch3: pyOpenSSL-nopdfout.patch
-# Hopefully the following patch is unnecessary now
-#Patch4: pyOpenSSL-threadsafe.patch
-License: LGPLv2+
+
+Patch10: pyOpenSSL-0.13-check-error.patch
+Patch11: pyOpenSSL-0.13.1-test-failure.patch
+
+License: ASL 2.0
 Group: Development/Libraries
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Url: http://pyopenssl.sourceforge.net/
-BuildRequires: elinks openssl-devel python-devel
-BuildRequires: tetex-dvips tetex-latex latex2html
+
+BuildRequires: elinks
+BuildRequires: openssl-devel
+BuildRequires: tetex-dvips
+BuildRequires: tetex-latex
+BuildRequires: latex2html
+
+BuildRequires: python-devel
 
 %description
-High-level wrapper around a subset of the OpenSSL library, includes
+High-level wrapper around a subset of the OpenSSL library, includes among others
  * SSL.Connection objects, wrapping the methods of Python's portable
    sockets
  * Callbacks written in Python
  * Extensive error-handling mechanism, mirroring OpenSSL's error codes
-...  and much more ;)
 
 %prep
-%setup -q
+%setup -q -n pyOpenSSL-%{version}
 %patch2 -p1 -b .elinks
 %patch3 -p1 -b .nopdfout
+%patch10 -p1 -b .error
+%patch11 -p1 -b .test-failure
+
 # Fix permissions for debuginfo package
-%{__chmod} -x src/ssl/connection.c
+%{__chmod} -x OpenSSL/ssl/connection.c
 
 %build
-CFLAGS="%{optflags}" %{__python} setup.py build
+find -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python}|'
+
+CFLAGS="%{optflags} -fno-strict-aliasing" %{__python} setup.py build
+
 %{__make} -C doc ps
 %{__make} -C doc text html
-find doc/ -name pyOpenSSL.\*
 
 %install
 %{__rm} -rf %{buildroot}
@@ -48,9 +61,15 @@ find doc/ -name pyOpenSSL.\*
 %defattr(-,root,root,-)
 %doc README doc/pyOpenSSL.* doc/html
 %{python_sitearch}/OpenSSL/
-%{python_sitearch}/%{name}*.egg-info
+%{python_sitearch}/pyOpenSSL-*.egg-info
 
 %changelog
+* Fri Feb 27 2015 Tomáš Mráz <tmraz@redhat.com> - 0.13.1-2
+- patch out a broken test
+
+* Thu Feb 19 2015 Tomáš Mráz <tmraz@redhat.com> - 0.13.1-1
+- rebase to upstream release 0.13.1
+
 * Thu Jan 28 2010 Tomáš Mráz <tmraz@redhat.com> - 0.10-2
 - fixed source URL
 

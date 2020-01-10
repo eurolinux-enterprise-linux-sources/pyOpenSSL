@@ -1,3 +1,140 @@
+2013-08-11  Christian Heimes  <christian@python.org>
+
+	* OpenSSL/crypto/x509ext.c: Fix handling of NULL bytes inside
+	  subjectAltName general names when formatting an X509 extension
+	  as a string.
+	* OpenSSL/crypto/x509.c: Fix memory leak in get_extension().
+
+2011-09-02  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* Release 0.13
+
+2011-06-12  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/crypto/pkey.c: Add the PKey.check method, mostly
+	  implemented by Rick Dean, to verify the internal consistency of a
+	  PKey instance.
+
+2011-06-12  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/crypto/crypto.c: Fix the sign and verify functions so
+	  they handle data with embedded NULs.  Fix by David Brodsky
+	  <lp:~lihalla>.
+
+2011-05-20  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/ssl/connection.c, OpenSSL/test/test_ssl.py: Add a new
+          method to the Connection type, get_peer_cert_chain, for retrieving
+          the peer's certificate chain.
+
+2011-05-19  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/crypto/x509.c, OpenSSL/test/test_crypto.py: Add a new
+          method to the X509 type, get_signature_algorithm, for inspecting
+          the signature algorithm field of the certificate.  Based on a
+          patch from <lp:~okuda>.
+
+2011-05-10  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/crypto/crypto.h: Work around a Windows/OpenSSL 1.0 issue
+	  explicitly including a Windows header before any OpenSSL headers.
+
+	* OpenSSL/crypto/pkcs12.c: Work around an OpenSSL 1.0 issue by
+	  explicitly flushing errors known to be uninteresting after calling
+	  PKCS12_parse.
+
+	* OpenSSL/ssl/context.c: Remove SSLv2 support if the underlying
+	  OpenSSL library does not provide it.
+
+	* OpenSSL/test/test_crypto.py: Support an OpenSSL 1.0 change from
+	  MD5 to SHA1 by allowing either hash algorithm's result as the
+	  return value of X509.subject_name_hash.
+
+	* OpenSSL/test/test_ssl.py: Support an OpenSSL 1.0 change from MD5
+	  to SHA1 by constructing certificate files named using both hash
+	  algorithms' results when testing Context.load_verify_locations.
+
+	* Support OpenSSL 1.0.0a.
+
+2011-04-15  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/ssl/ssl.c: Add OPENSSL_VERSION_NUMBER, SSLeay_version
+	  and related constants for retrieving version information about the
+	  underlying OpenSSL library.
+
+2011-04-07  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* Release 0.12
+
+2011-04-06  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/crypto/x509.c: Add get_extension_count and get_extension
+	  to the X509 type, allowing read access to certificate extensions.
+
+	* OpenSSL/crypto/x509ext.c: Add get_short_name and get_data to the
+	  X509Extension type, allowing read access to the contents of an
+	  extension.
+
+2011-03-21  Olivier Hervieu <lp:~ohe>
+
+	* OpenSSL/ssl/ssl.c: Expose a number of symbolic constants for
+	  values passed to the connection "info" callback.
+
+2011-01-22  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/ssl/connection.py: Add support for new-style
+	  buffers (primarily memoryviews) to Connection.send and
+	  Connection.sendall.
+
+2010-11-01  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* Release 0.11
+
+2010-10-07  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* Initial support for Python 3.x throughout the codebase.
+
+2010-09-14  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* OpenSSL/crypto/netscape_spki.c: Fix an off-by-one mistake in the
+	  error handling for NetscapeSPKI.verify.  Add additional error
+          checking to NetscapeSPKI.sign to handle the case where there is no
+          private key.
+
+	* OpenSSL/crypto/x509.c: Fix an overflow bug in the subject_name_hash
+	  method of the X509 type which would cause it to return negative
+	  values on 32 bit systems.
+
+	* OpenSSL/crypto/x509req.c: Fix an off-by-one mistake in the error
+	  handling for X509Req.verify.
+
+	* OpenSSL/ssl/context.c: Fix the error handling in the load_tmp_dh
+	  method of the Context type which would cause it to always raise
+	  MemoryError, regardless of the actual error (such as a bad file
+	  name).
+
+	* OpenSSL/test/: Numerous unit tests added, both for above fixes
+	  and for other previously untested code paths.
+
+2010-07-27  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* Re-arrange the repository so that the package can be built and
+	  used in-place without requiring installation.
+
+2010-02-27  James Yonan <james@openvpn.net>
+
+	* src/crypto/crypto.c: Added crypto.sign and crypto.verify methods
+	  that wrap EVP_Sign and EVP_Verify function families, using code
+	  derived from Dave Cridland's PyOpenSSL branch.
+
+	* test/test_crypto.py: Added unit tests for crypto.sign and
+	  crypto.verify.
+
+2010-01-27  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
+
+	* src/ssl/connection.c, src/util.h: Apply patch from Sandro Tosi to
+	  fix misspellings of "compatibility".
+
 2009-11-13  Jean-Paul Calderone  <exarkun@twistedmatrix.com>
 
 	* Release 0.10
