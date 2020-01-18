@@ -1,0 +1,93 @@
+diff -up pyOpenSSL-0.13.1/OpenSSL/crypto/crl.c.digest pyOpenSSL-0.13.1/OpenSSL/crypto/crl.c
+--- pyOpenSSL-0.13.1/OpenSSL/crypto/crl.c.digest	2011-08-15 00:06:11.000000000 +0200
++++ pyOpenSSL-0.13.1/OpenSSL/crypto/crl.c	2018-05-04 18:57:37.708913903 +0200
+@@ -2,7 +2,7 @@
+ #define crypto_MODULE
+ #include "crypto.h"
+ 
+-
++#if OPENSSL_VERSION_NUMBER<0x10002000L
+ static X509_REVOKED * X509_REVOKED_dup(X509_REVOKED *orig) {
+     X509_REVOKED *dupe = NULL;
+ 
+@@ -32,6 +32,7 @@ static X509_REVOKED * X509_REVOKED_dup(X
+     dupe->sequence = orig->sequence;
+     return dupe;
+ }
++#endif
+ 
+ static char crypto_CRL_get_revoked_doc[] = "\n\
+ Return revoked portion of the CRL structure (by value\n\
+@@ -130,14 +131,24 @@ crypto_CRL_export(crypto_CRLObj *self, P
+     crypto_PKeyObj *key;
+     ASN1_TIME *tmptm;
+     crypto_X509Obj *x509;
+-    static char *kwlist[] = {"cert", "key", "type", "days", NULL};
++    const char *mdname = NULL;
++    const EVP_MD *md;
++    static char *kwlist[] = {"cert", "key", "type", "days", "digest", NULL};
+     
+-    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!O!|ii:dump_crl", kwlist,
++    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O!O!|iiz:dump_crl", kwlist,
+                                      &crypto_X509_Type, &x509, 
+-                                     &crypto_PKey_Type, &key, &type, &days)) {
++                                     &crypto_PKey_Type, &key, &type, &days, &mdname)) {
++        return NULL;
++    }
++    if (mdname == NULL) {
++        mdname = "sha256";
++    }
++    if ((md = EVP_get_digestbyname(mdname)) == NULL) {
++        PyErr_SetString(
++            PyExc_ValueError,
++            "No such digest method");
+         return NULL;
+     }
+-    
+     bio = BIO_new(BIO_s_mem());
+     tmptm = ASN1_TIME_new();
+     if (!tmptm) {
+@@ -149,7 +160,7 @@ crypto_CRL_export(crypto_CRLObj *self, P
+     X509_CRL_set_nextUpdate(self->crl, tmptm);
+     ASN1_TIME_free(tmptm);
+     X509_CRL_set_issuer_name(self->crl, X509_get_subject_name(x509->x509));
+-    X509_CRL_sign(self->crl, key->pkey, EVP_md5());
++    X509_CRL_sign(self->crl, key->pkey, md);
+     switch (type) {
+         case X509_FILETYPE_PEM:
+             ret = PEM_write_bio_X509_CRL(bio, self->crl);
+diff -up pyOpenSSL-0.13.1/OpenSSL/test/test_crypto.py.digest pyOpenSSL-0.13.1/OpenSSL/test/test_crypto.py
+--- pyOpenSSL-0.13.1/OpenSSL/test/test_crypto.py.digest	2018-05-04 18:57:37.707913880 +0200
++++ pyOpenSSL-0.13.1/OpenSSL/test/test_crypto.py	2018-05-04 18:55:09.360484497 +0200
+@@ -2628,11 +2628,12 @@ class CRLTests(TestCase):
+         crl.add_revoked(revoked)
+ 
+         # PEM format
+-        dumped_crl = crl.export(self.cert, self.pkey, days=20)
++        dumped_crl = crl.export(self.cert, self.pkey, days=20, digest="sha1")
+         text = _runopenssl(dumped_crl, "crl", "-noout", "-text")
+         text.index(b('Serial Number: 03AB'))
+         text.index(b('Superseded'))
+         text.index(b('Issuer: /C=US/ST=IL/L=Chicago/O=Testing/CN=Testing Root CA'))
++        text.index(b('Signature Algorithm: sha1WithRSAEncryption'))
+ 
+         # DER format
+         dumped_crl = crl.export(self.cert, self.pkey, FILETYPE_ASN1)
+@@ -2662,14 +2663,14 @@ class CRLTests(TestCase):
+     def test_export_wrong_args(self):
+         """
+         Calling L{OpenSSL.CRL.export} with fewer than two or more than
+-        four arguments, or with arguments other than the certificate,
+-        private key, integer file type, and integer number of days it
++        five arguments, or with arguments other than the certificate,
++        private key, integer file type, integer number of days, and digest it
+         expects, results in a L{TypeError} being raised.
+         """
+         crl = CRL()
+         self.assertRaises(TypeError, crl.export)
+         self.assertRaises(TypeError, crl.export, self.cert)
+-        self.assertRaises(TypeError, crl.export, self.cert, self.pkey, FILETYPE_PEM, 10, "foo")
++        self.assertRaises(TypeError, crl.export, self.cert, self.pkey, FILETYPE_PEM, 10, "foo", "boo")
+ 
+         self.assertRaises(TypeError, crl.export, None, self.pkey, FILETYPE_PEM, 10)
+         self.assertRaises(TypeError, crl.export, self.cert, None, FILETYPE_PEM, 10)

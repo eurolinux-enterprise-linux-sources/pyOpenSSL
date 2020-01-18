@@ -5,7 +5,7 @@
 Summary: Python wrapper module around the OpenSSL library
 Name: pyOpenSSL
 Version: 0.13.1
-Release: 3%{?dist}
+Release: 4%{?dist}
 Source0: http://pypi.python.org/packages/source/p/pyOpenSSL/pyOpenSSL-%{version}.tar.gz
 
 # Fedora specific patches
@@ -14,6 +14,9 @@ Patch2: pyOpenSSL-elinks.patch
 Patch3: pyOpenSSL-nopdfout.patch
 
 Patch10: pyOpenSSL-0.13-check-error.patch
+Patch11: pyOpenSSL-0.13.1-test-failure.patch
+Patch12: pyOpenSSL-0.13.1-exception.patch
+Patch13: pyOpenSSL-0.13.1-digest.patch
 
 License: ASL 2.0
 Group: Development/Libraries
@@ -71,6 +74,9 @@ Documentation for pyOpenSSL
 %patch2 -p1 -b .elinks
 %patch3 -p1 -b .nopdfout
 %patch10 -p1 -b .error
+%patch11 -p1 -b .test-failure
+%patch12 -p1 -b .exception
+%patch13 -p1 -b .digest
 
 # Fix permissions for debuginfo package
 %{__chmod} -x OpenSSL/ssl/connection.c
@@ -118,6 +124,11 @@ popd
 %doc README doc/pyOpenSSL.* doc/html
 
 %changelog
+* Fri May  4 2018 Tomáš Mráz <tmraz@redhat.com> - 0.13.1-4
+- fix various testsuite failures
+- fix exception propagation from private key passphrase callback (#1227505)
+- add optional digest parameter to CRL.export method (#1523772)
+
 * Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.13.1-3
 - Mass rebuild 2014-01-24
 
