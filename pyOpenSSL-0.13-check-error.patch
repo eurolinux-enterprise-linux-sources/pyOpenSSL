@@ -1,0 +1,77 @@
+diff -up pyOpenSSL-0.13/OpenSSL/crypto/crypto.c.error pyOpenSSL-0.13/OpenSSL/crypto/crypto.c
+--- pyOpenSSL-0.13/OpenSSL/crypto/crypto.c.error	2011-09-02 17:46:13.000000000 +0200
++++ pyOpenSSL-0.13/OpenSSL/crypto/crypto.c	2013-04-04 14:25:17.405118204 +0200
+@@ -45,12 +45,15 @@ global_passphrase_callback(char *buf, in
+ 
+     func = (PyObject *)cb_arg;
+     argv = Py_BuildValue("(i)", rwflag);
++    if (argv == NULL)
++        return 0;
+     ret = PyEval_CallObject(func, argv);
+     Py_DECREF(argv);
+     if (ret == NULL)
+         return 0;
+     if (!PyBytes_Check(ret))
+     {
++        Py_DECREF(ret);
+         PyErr_SetString(PyExc_ValueError, "String expected");
+         return 0;
+     }
+@@ -58,6 +61,7 @@ global_passphrase_callback(char *buf, in
+     if (nchars > len)
+         nchars = len;
+     strncpy(buf, PyBytes_AsString(ret), nchars);
++    Py_DECREF(ret);
+     return nchars;
+ }
+ 
+@@ -637,7 +641,10 @@ crypto_sign(PyObject *spam, PyObject *ar
+         return NULL;
+     }
+ 
+-    EVP_SignInit(&md_ctx, digest);
++    if (EVP_SignInit(&md_ctx, digest) <= 0) {
++        exception_from_error_queue(crypto_Error);
++        return NULL;
++    }
+     EVP_SignUpdate(&md_ctx, data, data_len);
+     sig_len = sizeof(sig_buf);
+     err = EVP_SignFinal(&md_ctx, sig_buf, &sig_len, pkey->pkey);
+@@ -692,7 +699,11 @@ crypto_verify(PyObject *spam, PyObject *
+         return NULL;
+     }
+ 
+-    EVP_VerifyInit(&md_ctx, digest);
++    if (EVP_VerifyInit(&md_ctx, digest) <= 0) {
++        exception_from_error_queue(crypto_Error);
++        EVP_PKEY_free(pkey);
++        return NULL;
++    }
+     EVP_VerifyUpdate(&md_ctx, data, data_len);
+     err = EVP_VerifyFinal(&md_ctx, signature, sig_len, pkey);
+     EVP_PKEY_free(pkey);
+diff -up pyOpenSSL-0.13/OpenSSL/crypto/x509.c.error pyOpenSSL-0.13/OpenSSL/crypto/x509.c
+--- pyOpenSSL-0.13/OpenSSL/crypto/x509.c.error	2011-09-02 17:46:13.000000000 +0200
++++ pyOpenSSL-0.13/OpenSSL/crypto/x509.c	2013-04-04 14:02:34.932847551 +0200
+@@ -656,6 +656,7 @@ crypto_X509_digest(crypto_X509Obj *self,
+     if (!X509_digest(self->x509,digest,fp,&len))
+     {
+         exception_from_error_queue(crypto_Error);
++        return NULL;
+     }
+     tmp = malloc(3*len+1);
+     memset(tmp, 0, 3*len+1);
+diff -up pyOpenSSL-0.13/OpenSSL/ssl/context.c.error pyOpenSSL-0.13/OpenSSL/ssl/context.c
+--- pyOpenSSL-0.13/OpenSSL/ssl/context.c.error	2011-09-02 17:46:13.000000000 +0200
++++ pyOpenSSL-0.13/OpenSSL/ssl/context.c	2013-04-04 14:02:34.932847551 +0200
+@@ -1215,6 +1215,10 @@ ssl_Context_init(ssl_ContextObj *self, i
+     }
+ 
+     self->ctx = SSL_CTX_new(method);
++    if (self->ctx == NULL) {
++        exception_from_error_queue(ssl_Error);
++        return NULL;
++    }
+     Py_INCREF(Py_None);
+     self->passphrase_callback = Py_None;
+     Py_INCREF(Py_None);
